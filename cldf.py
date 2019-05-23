@@ -39,6 +39,14 @@ class CldfReader(absreader.AbstractReader):
                 lang_names[row["ID"]] = row["Name"]
 
         taxa = list(lang_names.values())
+
+        # Correct for duplicated names
+        if len(set(taxa)) != len(taxa):
+            for lang_id, lang_name in lang_names.items():
+                if taxa.count(lang_name) > 1:
+                    lang_names[lang_id] = lang_name + "_" + lang_id
+            taxa = list(lang_names.values())
+        assert len(set(taxa)) == len(taxa)
         taxa.sort()
 
         param_names = {}
