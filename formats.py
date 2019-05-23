@@ -1,8 +1,10 @@
 #!/usr/bin/python3
+import cldf
 import fasta
 
 _readers = {}
 _readers[fasta.FastaReader.getReaderName()] = fasta.FastaReader()
+_readers[cldf.CldfReader.getReaderName()] = cldf.CldfReader()
 
 def getFormats():
     '''List available formats (reader names).'''
