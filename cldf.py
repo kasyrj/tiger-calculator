@@ -69,7 +69,7 @@ class CldfReader(absreader.AbstractReader):
                 cognates[lang][meaning] = cognate
 
         # Convert to tiger-calculator form
-        meanings = list(cognates[taxa[0]])
+        meanings = list(set(form_to_param.values()))
         meanings.sort()
         for meaning in meanings:
             all_values = list(set((cognates[l].get(meaning, "?") for l in taxa)))
