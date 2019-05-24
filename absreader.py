@@ -2,9 +2,10 @@
 
 import abc
 
-class AbstractReader(metaclass=abc.ABCMeta):
+class AbstractReader(abc.ABC):
 
-    @abc.abstractstaticmethod
+    @staticmethod
+    @abc.abstractmethod
     def getReaderName(self):
         '''Return the string that specifies the format when coupled with the -f option.'''
         pass

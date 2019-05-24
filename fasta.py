@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import absreader
-import os
 
 class FastaReader(absreader.AbstractReader):
 
@@ -23,7 +22,7 @@ class FastaReader(absreader.AbstractReader):
             infile = f.readlines()
             f.close()
         except FileNotFoundError:
-            print("Could not find FASTA file",file_or_dir)
+            print("Could not find FASTA file %s" % file_or_dir)
             exit(1)
         # parse fasta to two arrays (one with taxa and another with chars)
         taxa = []
@@ -50,7 +49,7 @@ class FastaReader(absreader.AbstractReader):
             for i in chars:
                 assert(len(i) == len(chars[0]))
         except AssertionError:
-            print("Unable to read file correctly. Please ensure that the input file is in FASTA format.")
+            print("Unable to read file %s correctly. Please ensure that the input file is in FASTA format." % file_or_dir)
             exit(1)
         return [taxa,chars]
         
