@@ -1,11 +1,13 @@
 #!/usr/bin/python3
 
 import cldf
+import harvest
 import fasta
 
 _readers = {}
 _readers[fasta.FastaReader.getReaderName()] = fasta.FastaReader()
 _readers[cldf.CldfReader.getReaderName()] = cldf.CldfReader()
+_readers[harvest.HarvestReader.getReaderName()] = harvest.HarvestReader()
 
 def getFormats():
     '''List available formats (reader names).'''
