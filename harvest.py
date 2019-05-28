@@ -27,7 +27,6 @@ class HarvestReader(absreader.AbstractReader):
             reader = csv.reader(fp)
             headers = next(reader)
             N_features = len(headers) - 1
-            print(headers)
             taxa = []
             chars = []
             for i in range(0, N_features):
