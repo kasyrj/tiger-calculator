@@ -36,7 +36,7 @@ def split_list(alist, wanted_parts=1):
     return [ alist[i*length // wanted_parts: (i+1)*length // wanted_parts] 
              for i in range(wanted_parts) ]
 
-def calculate_tiger_rates(json_data,analyzed_keys,pool):
+def calculate_tiger_rates(analyzed_keys,pool):
     '''Calculate TIGER rates for the characters specified by the array keys'''
     name = multiprocessing.current_process().name
     with s:
@@ -94,7 +94,6 @@ if __name__ == '__main__':
                         default=N_PROCESSES,
                         type=int)
 
-
     if len(sys.argv) == 1:
         parser.print_help()
         exit(0)
@@ -149,11 +148,10 @@ if __name__ == '__main__':
 
     # Steps 2 and 3: calculate partition agreements; calculate TIGER rates
 
-    json_data = json.dumps(char_dict)
     pool = ActivePool()
-    #pool.data.update(char_dict)
+    pool.data.update(char_dict)
     s = multiprocessing.Semaphore(args.n_processes)
-    jobs = [ multiprocessing.Process(target=calculate_tiger_rates, name=str(k), args=(json_data,k, pool))
+    jobs = [ multiprocessing.Process(target=calculate_tiger_rates, name=str(k), args=(k, pool))
              for k in split_list(list(char_dict.keys()),args.n_processes)]
 
     for j in jobs:
@@ -164,6 +162,3 @@ if __name__ == '__main__':
 
     for k in sorted(pool.result.keys()):
         print(pool.result[k])
-
-
-
