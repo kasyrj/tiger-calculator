@@ -30,16 +30,9 @@ class HarvestReader(absreader.AbstractReader):
             N_features = len(headers) - 1
             taxa = []
             chars = []
-            for i in range(0, N_features):
-                chars.append([])
-            try:
-                for row in reader:
-                    taxa.append(row[0])
-                    for i, point in enumerate(row[1:]):
-                        chars[i].append(point)
-            except IndexError:
-                print("Unable to parse file %s." % file_or_dir, file=sys.stderr)
-                exit(1)
+            for row in reader:
+                taxa.append(row[0])
+                chars.append(row[1:])
         return [taxa,chars]
         
 if __name__ == '__main__':
