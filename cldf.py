@@ -3,6 +3,7 @@
 import absreader
 import csv
 import os
+import sys
 
 class CldfReader(absreader.AbstractReader):
 
@@ -17,16 +18,16 @@ class CldfReader(absreader.AbstractReader):
         
     def getContents(self, file_or_dir):
         if file_or_dir == None:
-            print("Please specify an input CLDF dataset.")
+            print("Please specify an input CLDF dataset.", file=sys.stderr)
             exit(1)
         if not os.path.exists(file_or_dir):
-            print("Dataset %s does not exist." % file_or_dir)
+            print("Dataset %s does not exist." % file_or_dir, file=sys.stderr)
             exit(1)
         if not os.path.isdir(file_or_dir):
             file_or_dir = os.path.dirname(file_or_dir)
         if not all((os.path.exists(os.path.join(file_or_dir, x)) for x in
             ("languages.csv", "forms.csv", "cognates.csv"))):
-            print("CLDF dataset does not use standard filenames.")
+            print("CLDF dataset does not use standard filenames.", file=sys.stderr)
             exit(1)
 
         # Read CLDF data

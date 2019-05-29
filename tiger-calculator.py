@@ -37,11 +37,12 @@ def split_list(alist, wanted_parts=1):
              for i in range(wanted_parts) ]
 
 def calculate_tiger_rates(analyzed_keys,pool):
-    '''Calculate TIGER rates for the characters specified by the array keys'''
+    '''Calculate partition agreements and TIGER rates for the characters specified by the array keys'''
     name = multiprocessing.current_process().name
     with s:
         pool.makeActive(name)
         data = pool.data
+        # Calculate partition agreement scores
         for x in analyzed_keys:
             agr_array = []
             for y in char_dict.keys():
@@ -64,7 +65,7 @@ def calculate_tiger_rates(analyzed_keys,pool):
                     if match:
                         agreements += 1
                 agr_array.append(float(agreements)/total)
-            # Step 3: Calculate TIGER rate
+            # Calculate TIGER rates
             pool.result[x] = sum(agr_array) / len(agr_array) # TIGER rate for the current character
 
 if __name__ == '__main__':
@@ -90,7 +91,7 @@ if __name__ == '__main__':
 
     parser.add_argument("-p","--processes",
                         dest="n_processes",
-                        help="Number of processes (threads) to use. Default: %i (the detected number of CPUs)." % N_PROCESSES,
+                        help="Number of processes (threads) to use. Default: %i (the detected number of logical CPUs)." % N_PROCESSES,
                         default=N_PROCESSES,
                         type=int)
 
@@ -99,13 +100,13 @@ if __name__ == '__main__':
         exit(0)
     args = parser.parse_args()
     if args.format == None:
-        print(FORMAT_ERROR_MSG)
+        print(FORMAT_ERROR_MSG, file=sys.stderr)
         exit(1)
 
     reader = formats.getReader(args.format)
 
     if reader == None:
-        print(FORMAT_ERROR_MSG)
+        print(FORMAT_ERROR_MSG, file=sys.stderr)
         exit(1)
 
     content = reader.getContents(args.in_file)
@@ -113,6 +114,10 @@ if __name__ == '__main__':
     chars = content[1]
 
     ignored_chars = args.ignored_chars.split(",")
+
+    if len(taxa) == 0 or len(chars) == 0:
+        print("Error: Empty characters or taxa in input file.", file=sys.stderr)
+        exit(1)
 
     # set up a dict with [char_num][taxon] format. Each terminal node contains an aligned character
 
@@ -146,7 +151,7 @@ if __name__ == '__main__':
         for c in ignored_chars:
             removed = set_parts[site].pop(c,None)
 
-    # Steps 2 and 3: calculate partition agreements; calculate TIGER rates
+    # Steps 2 and 3: calculate partition agreements and TIGER rates concurrently
 
     pool = ActivePool()
     pool.data.update(char_dict)

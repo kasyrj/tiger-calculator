@@ -3,6 +3,7 @@
 import absreader
 import csv
 import os
+import sys
 
 class HarvestReader(absreader.AbstractReader):
 
@@ -17,10 +18,10 @@ class HarvestReader(absreader.AbstractReader):
         
     def getContents(self, file_or_dir):
         if file_or_dir == None:
-            print("Please specify an input Harvest-style CSV file.")
+            print("Please specify an input Harvest-style CSV file.", file=sys.stderr)
             exit(1)
         if not os.path.exists(file_or_dir):
-            print("Dataset %s does not exist." % file_or_dir)
+            print("Dataset %s does not exist." % file_or_dir, file=sys.stderr)
             exit(1)
 
         with open(file_or_dir, "r") as fp:
@@ -31,10 +32,14 @@ class HarvestReader(absreader.AbstractReader):
             chars = []
             for i in range(0, N_features):
                 chars.append([])
-            for row in reader:
-                taxa.append(row[0])
-                for i, point in enumerate(row[1:]):
-                    chars[i].append(point)
+            try:
+                for row in reader:
+                    taxa.append(row[0])
+                    for i, point in enumerate(row[1:]):
+                        chars[i].append(point)
+            except IndexError:
+                print("Unable to parse file %s." % file_or_dir, file=sys.stderr)
+                exit(1)
         return [taxa,chars]
         
 if __name__ == '__main__':
