@@ -30,10 +30,13 @@ class HarvestReader(absreader.AbstractReader):
             N_features = len(headers) - 1
             taxa = []
             chars = []
-            for row in reader:
-                taxa.append(row[0])
-                chars.append(row[1:])
-        return [taxa,chars]
+            try:
+                for row in reader:
+                    taxa.append(row[0])
+                    chars.append(row[1:])
+            except IndexError:
+                pass
+            return [taxa,chars]
         
 if __name__ == '__main__':
     print("Harvest-style CSV reader class for tiger-calculator")
