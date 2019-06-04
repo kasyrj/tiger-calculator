@@ -95,7 +95,7 @@ class CldfReader(absreader.AbstractReader):
                 alignment.append(cognates[taxon][meaning])
             chars.append(alignment)
 
-        return [taxa,chars]
+        return [taxa,chars,meanings]
         
 if __name__ == '__main__':
     print("CLDF reader class for tiger-calculator")
