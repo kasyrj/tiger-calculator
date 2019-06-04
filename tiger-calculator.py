@@ -95,6 +95,12 @@ if __name__ == '__main__':
                         default=N_PROCESSES,
                         type=int)
 
+    parser.add_argument("-n","--named-characters",
+                        dest="named_characters",
+                        help="Include a column identifying which TIGER rate belongs to which aligned character.",
+                        default=False,
+                        action='store_true')
+    
     if len(sys.argv) == 1:
         parser.print_help()
         exit(0)
@@ -112,7 +118,11 @@ if __name__ == '__main__':
     content = reader.getContents(args.in_file)
     taxa = content[0]
     chars = content[1]
-
+    try:
+        names = content[2]
+    except:
+        names = range(1, len(chars[0]) + 1)
+        
     ignored_chars = args.ignored_chars.split(",")
 
     if len(taxa) == 0 or len(chars) == 0:
@@ -166,4 +176,8 @@ if __name__ == '__main__':
         j.join()
 
     for k in sorted(pool.result.keys()):
-        print(pool.result[k])
+        line = ""
+        if args.named_characters:
+            line += str(names[k]) + "\t"
+        line += str(pool.result[k])
+        print(line)
