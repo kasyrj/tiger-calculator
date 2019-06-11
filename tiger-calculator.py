@@ -85,7 +85,13 @@ if __name__ == '__main__':
 
     parser.add_argument("-i","--ignored-characters",
                         dest="ignored_chars",
-                        help="A comma-separated list of ignored characters.",
+                        help="A comma-separated list of ignored characters. Missing characters should be included here.",
+                        default="",
+                        type=str)
+
+    parser.add_argument("-x","--excluded-taxa",
+                        dest="excluded_taxa",
+                        help="A comma-separated list of taxa excluded from the calculations.",
                         default="",
                         type=str)
 
@@ -122,6 +128,22 @@ if __name__ == '__main__':
         names = content[2]
     except:
         names = range(1, len(chars[0]) + 1)
+
+    excluded_taxa = args.excluded_taxa.split(",")
+    if excluded_taxa != [""]:
+        excluded_taxa = set(excluded_taxa)
+        for taxon in excluded_taxa:
+            if taxon not in taxa:
+                print("Taxon %s not found in data." % taxon, file=sys.stderr)
+                exit(1)
+        while len(excluded_taxa) > 0:
+            for i in range(len(taxa)):
+                if taxa[i] in excluded_taxa:
+                    current_taxon = taxa[i]
+                    excluded_taxa.remove(current_taxon)
+                    del taxa[i]
+                    del chars[i]
+                    break
         
     ignored_chars = args.ignored_chars.split(",")
 
