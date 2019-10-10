@@ -90,7 +90,6 @@ class CldfReader(absreader.AbstractReader):
         meanings.sort()
         for meaning in meanings:
             all_values = list(set((cognates[l].get(meaning, "?") for l in taxa)))
-            print(meaning, len(all_values))
             if "?" in all_values:
                 all_values.remove("?")
             all_values.sort()
