@@ -90,6 +90,7 @@ class CldfReader(absreader.AbstractReader):
         meanings.sort()
         for meaning in meanings:
             all_values = list(set((cognates[l].get(meaning, "?") for l in taxa)))
+            print(meaning, len(all_values))
             if "?" in all_values:
                 all_values.remove("?")
             all_values.sort()
@@ -126,25 +127,40 @@ def resolve_synonyms_random(languages, meanings, cognates):
 
 def resolve_synonyms_minimax(languages, meanings, cognates, mode="min"):
     for meaning in meanings:
+        # Count cognate classes
         cognate_class_counts = collections.Counter()
         for lang in languages:
             for c in cognates[lang][meaning]:
                 if c != "?":
                     cognate_class_counts[c] += 1
-        for lang in languages:
+        # Divide languages into easy and hard cases
+        easy_langs = [l for l in languages if len(cognates[l][meaning]) < 2]
+        hard_langs = [l for l in languages if l not in easy_langs]
+        # Make easy assignments
+        attested_cognates = set()
+        for lang in easy_langs:
             if not cognates[lang][meaning]:
                 cognates[lang][meaning] = "?"
             elif len(cognates[lang][meaning]) == 1:
                 cognates[lang][meaning] = cognates[lang][meaning].pop()
+            attested_cognates.add(cognates[lang][meaning])
+        # Make hard assignments
+        for lang in hard_langs:
+            options = [(cognate_class_counts[c], c) for c in cognates[lang][meaning]]
+            # Sort cognates from rare to common if we want to maximise cognate
+            # class count, or from common to rare if we want to minimise it.
+            options.sort(reverse = mode == "min")
+            # Preferentially assign a cognate which has already been
+            # assigned if we're trying to minimise, or one which has
+            # not if we're trying to maximise.
+            for n, c in options:
+                if (mode == "min" and c in attested_cognates) or (mode == "max" and c not in attested_cognates):
+                    cognates[lang][meaning] = c
+                    break
+            # Otherwise just pick the most/least frequent cognate.
             else:
-                options = [(cognate_class_counts[c], c) for c in cognates[lang][meaning]]
-                options.sort()
-                if meaning == "sniff":
-                    print(options)
-                if mode == "min":
-                    cognates[lang][meaning] = options[-1][1]
-                elif mode == "max":
-                    cognates[lang][meaning] = options[0][1]
+                cognates[lang][meaning] = options[0][1]
+            attested_cognates.add(cognates[lang][meaning])
     return cognates
 
 if __name__ == '__main__':
