@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 
 import absreader
+import collections
 import csv
 import os
 import sys
+import random
 
 class CldfReader(absreader.AbstractReader):
 
@@ -11,7 +13,7 @@ class CldfReader(absreader.AbstractReader):
         return "cldf"
 
     def __init__(self):
-        pass
+        self.synonym_strategy = "minimum"
     
     def __del__(self):
         pass
@@ -63,10 +65,13 @@ class CldfReader(absreader.AbstractReader):
             for row in reader:
                 form_to_param[row["ID"]] = param_names[row["Parameter_ID"]]
                 form_to_lang[row["ID"]] = lang_names[row["Language_ID"]]
+        meanings = set(form_to_param.values())
 
         cognates = {}
         for taxon in taxa:
             cognates[taxon] = {}
+            for meaning in meanings:
+                cognates[taxon][meaning] = set()
 
         with open(os.path.join(file_or_dir, "cognates.csv"), "r") as fp:
             reader = csv.DictReader(fp)
@@ -75,7 +80,10 @@ class CldfReader(absreader.AbstractReader):
                 assert lang in taxa
                 meaning = form_to_param[row["Form_ID"]]
                 cognate = row["Cognateset_ID"]
-                cognates[lang][meaning] = cognate
+                cognates[lang][meaning].add(cognate)
+
+        # Resolve synonyms
+        cognates = resolve_synonyms(taxa, meanings, cognates, self.synonym_strategy)
 
         # Convert to tiger-calculator form
         meanings = list(set(form_to_param.values()))
@@ -96,6 +104,48 @@ class CldfReader(absreader.AbstractReader):
             chars.append(alignment)
 
         return [taxa,chars,meanings]
-        
+ 
+def resolve_synonyms(languages, meanings, cognates, strategy):
+    if strategy == "random":
+        return resolve_synonyms_random(languages, meanings, cognates)
+    elif strategy == "minimum":
+        return resolve_synonyms_minimax(languages, meanings, cognates, "min")
+    elif strategy == "maximum":
+        return resolve_synonyms_minimax(languages, meanings, cognates, "max")
+
+def resolve_synonyms_random(languages, meanings, cognates):
+    for meaning in meanings:
+        for lang in languages:
+            if not cognates[lang][meaning]:
+                cognates[lang][meaning] = "?"
+            elif len(cognates[lang][meaning]) == 1:
+                cognates[lang][meaning] = cognates[lang][meaning].pop()
+            else:
+                cognates[lang][meaning] = random.sample(cognates[lang][meaning], 1)[0]
+    return cognates
+
+def resolve_synonyms_minimax(languages, meanings, cognates, mode="min"):
+    for meaning in meanings:
+        cognate_class_counts = collections.Counter()
+        for lang in languages:
+            for c in cognates[lang][meaning]:
+                if c != "?":
+                    cognate_class_counts[c] += 1
+        for lang in languages:
+            if not cognates[lang][meaning]:
+                cognates[lang][meaning] = "?"
+            elif len(cognates[lang][meaning]) == 1:
+                cognates[lang][meaning] = cognates[lang][meaning].pop()
+            else:
+                options = [(cognate_class_counts[c], c) for c in cognates[lang][meaning]]
+                options.sort()
+                if meaning == "sniff":
+                    print(options)
+                if mode == "min":
+                    cognates[lang][meaning] = options[-1][1]
+                elif mode == "max":
+                    cognates[lang][meaning] = options[0][1]
+    return cognates
+
 if __name__ == '__main__':
     print("CLDF reader class for tiger-calculator")

@@ -107,6 +107,12 @@ if __name__ == '__main__':
                         default=False,
                         action='store_true')
     
+    parser.add_argument("-s","--synonym-strategy",
+                        dest="synonym_strategy",
+                        help="Strategy for resolving synonyms.  Available strategies: random, minimum, maximum.",
+                        default="minimum",
+                        type=str)
+
     if len(sys.argv) == 1:
         parser.print_help()
         exit(0)
@@ -116,6 +122,8 @@ if __name__ == '__main__':
         exit(1)
 
     reader = formats.getReader(args.format)
+    if args.format == "cldf":
+        reader.synonym_strategy = args.synonym_strategy
 
     if reader == None:
         print(FORMAT_ERROR_MSG, file=sys.stderr)
