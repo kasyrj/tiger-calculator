@@ -190,7 +190,10 @@ if __name__ == '__main__':
         # Remove ignored characters from set_parts
         for c in ignored_chars:
             removed = set_parts[site].pop(c,None)
-
+        if set_parts[site] == {}:
+            print("Error: Empty character alignment at position " + str(site) + ". TIGER rates not calculated.", file=sys.stderr)
+            exit(1)
+            
     # Steps 2 and 3: calculate partition agreements and TIGER rates concurrently
 
     pool = ActivePool()
