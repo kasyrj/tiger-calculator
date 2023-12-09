@@ -36,7 +36,7 @@ class CldfReader(absreader.AbstractReader):
         # This is basically a bunch of quick and dirty manual JOINs of RDBMS
         # tables, each encoded as CSV files.
         lang_names = {}
-        with open(os.path.join(file_or_dir, "languages.csv"), "r") as fp:
+        with open(os.path.join(file_or_dir, "languages.csv"), "r", encoding="utf-8") as fp:
             reader = csv.DictReader(fp)
             for row in reader:
                 lang_names[row["ID"]] = row["Name"]
@@ -53,14 +53,14 @@ class CldfReader(absreader.AbstractReader):
         taxa.sort()
 
         param_names = {}
-        with open(os.path.join(file_or_dir, "parameters.csv"), "r") as fp:
+        with open(os.path.join(file_or_dir, "parameters.csv"), "r", encoding="utf-8") as fp:
             reader = csv.DictReader(fp)
             for row in reader:
                 param_names[row["ID"]] = row["Name"]
 
         form_to_param = {}
         form_to_lang = {}
-        with open(os.path.join(file_or_dir, "forms.csv"), "r") as fp:
+        with open(os.path.join(file_or_dir, "forms.csv"), "r", encoding="utf-8") as fp:
             reader = csv.DictReader(fp)
             for row in reader:
                 form_to_param[row["ID"]] = param_names[row["Parameter_ID"]]
@@ -73,7 +73,7 @@ class CldfReader(absreader.AbstractReader):
             for meaning in meanings:
                 cognates[taxon][meaning] = set()
 
-        with open(os.path.join(file_or_dir, "cognates.csv"), "r") as fp:
+        with open(os.path.join(file_or_dir, "cognates.csv"), "r", encoding="utf-8") as fp:
             reader = csv.DictReader(fp)
             for row in reader:
                 lang = form_to_lang[row["Form_ID"]]
