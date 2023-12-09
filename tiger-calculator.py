@@ -72,7 +72,7 @@ def calculate_tiger_rates(analyzed_keys):
 
 
 def calculate_tiger_rates_multiprocessing(analyzed_keys, pool, s):
-    '''Calculate partition agreements and TIGER rates for the characters specified by the array keys'''
+    '''Calculate partition agreements and TIGER rates for the characters specified by the array keys (multiprocessing)'''
     name = multiprocessing.current_process().name
     with s:
         pool.makeActive(name)
