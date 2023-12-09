@@ -5,7 +5,10 @@ import argparse
 import formats
 import os
 import multiprocessing
-multiprocessing.set_start_method('fork') # multiprocessing fix for Mac Pythons changing the default start method in Python 3.7.
+
+multiprocessing_allowed = os.name != 'nt' # multiprocessing currently incompatible with Windows, so we disable it here.
+if multiprocessing_allowed:
+    multiprocessing.set_start_method('fork') # multiprocessing fix for Mac Pythons changing the default start method in Python 3.7.
 
 PARSER_DESC = "Simple TIGER rates calculator."
 FORMAT_ERROR_MSG = "Please specify one of the available formats: " + formats.getFormatsAsString()
@@ -213,10 +216,6 @@ if __name__ == '__main__':
     result = None
 
     # multiprocessing
-
-    # Disable multiprocessing on Windows for now (would need a different implementation)
-    multiprocessing_allowed = os.name != 'nt'
-
     if not multiprocessing_allowed and args.n_processes > 1:
         print("Multiprocessing disabled for current system", file=sys.stderr)
 
