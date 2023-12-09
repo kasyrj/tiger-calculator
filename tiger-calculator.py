@@ -220,7 +220,7 @@ if __name__ == '__main__':
     if not multiprocessing_allowed and args.n_processes > 1:
         print("Multiprocessing disabled for current system", file=sys.stderr)
 
-    if args.n_processes > 1 and os.name != 'nt':
+    if args.n_processes > 1 and multiprocessing_allowed:
         pool = ActivePool()
         pool.data.update(char_dict)
         s = multiprocessing.Semaphore(args.n_processes)
