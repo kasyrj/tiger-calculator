@@ -3,12 +3,14 @@
 import sys
 import argparse
 import formats
+import os
 import multiprocessing
 multiprocessing.set_start_method('fork') # multiprocessing fix for Mac Pythons changing the default start method in Python 3.7.
 
 PARSER_DESC = "Simple TIGER rates calculator."
 FORMAT_ERROR_MSG = "Please specify one of the available formats: " + formats.getFormatsAsString()
 N_PROCESSES = int(multiprocessing.cpu_count())
+
 
 class ActivePool(object):
     def __init__(self):
@@ -18,18 +20,19 @@ class ActivePool(object):
         self.result = self.mgr.dict()
         self.data = self.mgr.dict()
         self.lock = multiprocessing.Lock()
-        
+
     def makeActive(self, name):
         with self.lock:
             self.active.append(name)
-            
+
     def makeInactive(self, name):
         with self.lock:
             self.active.remove(name)
-            
+
     def __str__(self):
         with self.lock:
             return str(self.active)
+
 
 def split_list(alist, wanted_parts=1):
     '''Split a list equally into a specified number of parts'''
@@ -37,37 +40,47 @@ def split_list(alist, wanted_parts=1):
     return [ alist[i*length // wanted_parts: (i+1)*length // wanted_parts] 
              for i in range(wanted_parts) ]
 
-def calculate_tiger_rates(analyzed_keys,pool):
+
+def calculate_tiger_rates(analyzed_keys):
+    '''Calculate partition agreements and TIGER rates for the characters specified by the array keys'''
+    results = {}
+    for x in analyzed_keys:
+        agr_array = []
+        for y in char_dict.keys():
+            if x == y:
+                continue
+            agreements = 0 # numerator of pa(i,j)
+            total = 0      # denominator of pa(i,j). Equal to len(char_dict)-1.
+            valid_taxa = set()
+            for sp_x in set_parts[x]:
+                valid_taxa = valid_taxa|set_parts[x][sp_x] # set of taxa without missing data for site x
+            for sp_y in set_parts[y]:
+                match = False
+                for sp_x in set_parts[x]:
+                    current_x = set_parts[x][sp_x]
+                    current_y = set_parts[y][sp_y]
+                    if current_y.intersection(valid_taxa).issubset(current_x): # Compare taxa in y minus missing taxa in x to taxa in x
+                        match = True
+                        break # Found a match; don't compare the remaining ones
+                total += 1
+                if match:
+                    agreements += 1
+            agr_array.append(float(agreements)/total)
+        # Calculate TIGER rates
+        results[x] = sum(agr_array) / len(agr_array) # TIGER rate for the current character
+    return results
+
+
+def calculate_tiger_rates_multiprocessing(analyzed_keys, pool, s):
     '''Calculate partition agreements and TIGER rates for the characters specified by the array keys'''
     name = multiprocessing.current_process().name
     with s:
         pool.makeActive(name)
         data = pool.data
-        # Calculate partition agreement scores
-        for x in analyzed_keys:
-            agr_array = []
-            for y in char_dict.keys():
-                if x == y:
-                    continue
-                agreements = 0 # numerator of pa(i,j)
-                total = 0      # denominator of pa(i,j). Equal to len(char_dict)-1.
-                valid_taxa = set()
-                for sp_x in set_parts[x]:
-                    valid_taxa = valid_taxa|set_parts[x][sp_x] # set of taxa without missing data for site x
-                for sp_y in set_parts[y]:
-                    match = False
-                    for sp_x in set_parts[x]:
-                        current_x = set_parts[x][sp_x]
-                        current_y = set_parts[y][sp_y] 
-                        if current_y.intersection(valid_taxa).issubset(current_x): # Compare taxa in y minus missing taxa in x to taxa in x
-                            match = True
-                            break # Found a match; don't compare the remaining ones
-                    total += 1
-                    if match:
-                        agreements += 1
-                agr_array.append(float(agreements)/total)
-            # Calculate TIGER rates
-            pool.result[x] = sum(agr_array) / len(agr_array) # TIGER rate for the current character
+        result = calculate_tiger_rates(analyzed_keys)
+        for k in result.keys():
+            pool.result[k] = result[k]
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=PARSER_DESC)
@@ -98,7 +111,7 @@ if __name__ == '__main__':
 
     parser.add_argument("-p","--processes",
                         dest="n_processes",
-                        help="Number of processes (threads) to use. Default: %i (the detected number of logical CPUs)." % N_PROCESSES,
+                        help="Number of processes (threads) to use. Default: %i (the detected number of logical CPUs). Currently only works on Linux and Mac." % N_PROCESSES,
                         default=N_PROCESSES,
                         type=int)
 
@@ -107,7 +120,7 @@ if __name__ == '__main__':
                         help="Include a column identifying which TIGER rate belongs to which aligned character.",
                         default=False,
                         action='store_true')
-    
+
     parser.add_argument("-s","--synonym-strategy",
                         dest="synonym_strategy",
                         help="Strategy for resolving synonyms.  Available strategies: random, minimum, maximum.",
@@ -153,7 +166,7 @@ if __name__ == '__main__':
                     del taxa[i]
                     del chars[i]
                     break
-        
+
     ignored_chars = args.ignored_chars.split(",")
 
     if len(taxa) == 0 or len(chars) == 0:
@@ -194,24 +207,41 @@ if __name__ == '__main__':
         if set_parts[site] == {}:
             print("Error: Empty character alignment at position " + str(site) + ". TIGER rates not calculated.", file=sys.stderr)
             exit(1)
-            
-    # Steps 2 and 3: calculate partition agreements and TIGER rates concurrently
 
-    pool = ActivePool()
-    pool.data.update(char_dict)
-    s = multiprocessing.Semaphore(args.n_processes)
-    jobs = [ multiprocessing.Process(target=calculate_tiger_rates, name=str(k), args=(k, pool))
-             for k in split_list(list(char_dict.keys()),args.n_processes)]
+    # Steps 2 and 3: calculate partition agreements and TIGER rates
 
-    for j in jobs:
-        j.start()
-        
-    for j in jobs:
-        j.join()
+    result = None
 
-    for k in sorted(pool.result.keys()):
+    # multiprocessing
+
+    # Disable multiprocessing on Windows for now (would need a different implementation)
+    multiprocessing_allowed = os.name != 'nt'
+
+    if not multiprocessing_allowed and args.n_processes > 1:
+        print("Multiprocessing disabled for current system", file=sys.stderr)
+
+    if args.n_processes > 1 and os.name != 'nt':
+        pool = ActivePool()
+        pool.data.update(char_dict)
+        s = multiprocessing.Semaphore(args.n_processes)
+        jobs = [ multiprocessing.Process(target=calculate_tiger_rates_multiprocessing, name=str(k), args=(k, pool, s))
+              for k in split_list(list(char_dict.keys()),args.n_processes)]
+
+        for j in jobs:
+          j.start()
+
+        for j in jobs:
+          j.join()
+
+        result = pool.result
+
+    # single-threaded
+    else:
+        result = calculate_tiger_rates(char_dict.keys())
+
+    for k in sorted(result.keys()):
         line = ""
         if args.named_characters:
             line += str(names[k]) + "\t"
-        line += str(pool.result[k])
+        line += str(result[k])
         print(line)
