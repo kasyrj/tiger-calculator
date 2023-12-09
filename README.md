@@ -1,6 +1,6 @@
 # tiger-calculator
 
-A simple Python3 program to calculate TIGER rates (Cummins & McInerney 2011). Currently supported formats: FASTA, CLDF, harvest-style CSV. Use `tiger-calculator.py` or `tiger-calculator.py --help` to see available options.
+A simple Python3 program to calculate TIGER rates (Cummins & McInerney 2011). Currently supported formats: FASTA, CLDF, harvest-style CSV (examples of FASTA and harvest-style CSV can be found from directory `example-files`). Use `tiger-calculator.py` or `tiger-calculator.py --help` to see available options.
 
 If you use this program for research purposes please cite the following paper:
 
